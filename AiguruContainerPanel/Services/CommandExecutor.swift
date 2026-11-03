@@ -366,6 +366,17 @@ class CommandExecutor {
         return result.output
     }
 
+    /// Runs a shell command through the macOS native administrator authorization dialog.
+    /// The complete command is base64 encoded before entering AppleScript, matching the
+    /// PrivilegeManager flow used by AiguruServerPanel.
+    func executeAdministratorShellCommand(_ command: String, timeout: TimeInterval? = nil) async throws -> String {
+        let encoded = Data(command.utf8).base64EncodedString()
+        let script = "do shell script \"echo '\(encoded)' | base64 -d | /bin/bash\" with administrator privileges"
+        let output = try await executeSystemCommand(arguments: ["/usr/bin/osascript", "-e", script])
+        print("[admin-shell] completed: \(output.trimmingCharacters(in: .whitespacesAndNewlines))")
+        return output
+    }
+
     // MARK: - 公开：sudo 执行
 
     /// 通过 `sudo -S` 执行命令。密码错误与命令失败会返回明确区分的错误信息。

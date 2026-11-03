@@ -167,9 +167,11 @@ struct NetworkView: View {
         @ObservedObject var vm: NetworkViewModel
         @State private var selectedID: String?
         @State private var pendingDelete: HostsEntry?
+        @State private var deleteTarget: HostsEntry?
+        @State private var showDeletePassword = false
+        @State private var deletePassword = ""
         @State private var address = ""
         @State private var hostnames = ""
-        @State private var password = ""
         @State private var busy = false
         @State private var error: String?
         var body: some View {
@@ -180,7 +182,6 @@ struct NetworkView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         TextField("IP 地址", text: $address).textFieldStyle(.roundedBorder)
                         TextField("域名（逗号分隔）", text: $hostnames).textFieldStyle(.roundedBorder)
-                        SecureField("管理员密码", text: $password).textFieldStyle(.roundedBorder)
                         Button("提交") { addHost() }.buttonStyle(.borderedProminent).frame(maxWidth: .infinity, alignment: .trailing).disabled(busy)
                         if let error { Text(error).font(.caption).foregroundStyle(.red) }
                     }.padding(12)
@@ -210,8 +211,32 @@ struct NetworkView: View {
             }
             .alert("删除 Hosts 条目？", isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } })) {
                 Button("取消", role: .cancel) { pendingDelete = nil }
-                Button("删除", role: .destructive) { deleteHost() }
-            } message: { Text("删除选中的 Hosts 条目？需要管理员密码。") }
+                Button("删除", role: .destructive) {
+                    deleteTarget = pendingDelete
+                    deletePassword = ""
+                    showDeletePassword = true
+                }
+            } message: { Text("删除选中的 Hosts 条目？确认后将打开 macOS 原生管理员授权窗口。") }
+            .sheet(isPresented: $showDeletePassword) {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("删除 Hosts 条目").font(.title2.bold())
+                    if let entry = deleteTarget {
+                        Text("将删除 \(entry.hostnames.joined(separator: ", ")) → \(entry.address)").foregroundStyle(.secondary)
+                    }
+                    Text("确认后将打开 macOS 原生管理员授权窗口。")
+                        .font(.caption).foregroundStyle(.secondary)
+                    HStack {
+                        Button("取消") { showDeletePassword = false }
+                        Spacer()
+                        Button("确认删除") {
+                            showDeletePassword = false
+                            deleteHost()
+                        }.buttonStyle(.borderedProminent).disabled(busy)
+                    }
+                }
+                .padding(20)
+                .frame(width: 380)
+            }
             .onAppear { vm.refreshHosts() }
         }
 
@@ -239,17 +264,25 @@ struct NetworkView: View {
         private func addHost() {
             busy = true; error = nil
             Task {
-                let result = await vm.addHostsEntry(address: address, hostnames: hostnames, password: password)
-                await MainActor.run { busy = false; error = result; if result == nil { address = ""; hostnames = ""; password = "" } }
+                let result = await vm.addHostsEntry(address: address, hostnames: hostnames, password: "")
+                await MainActor.run { busy = false; error = result; if result == nil { address = ""; hostnames = "" } }
             }
         }
 
         private func deleteHost() {
-            guard let entry = pendingDelete else { return }
+            guard let entry = deleteTarget else { return }
             busy = true; error = nil
             Task {
-                let result = await vm.deleteHostsEntry(entry, password: password)
-                await MainActor.run { busy = false; error = result; if result == nil { selectedID = nil; pendingDelete = nil; password = "" } }
+                let result = await vm.deleteHostsEntry(entry, password: "")
+                await MainActor.run {
+                    busy = false
+                    error = result
+                    if result == nil {
+                        selectedID = nil
+                        pendingDelete = nil
+                        deleteTarget = nil
+                    }
+                }
             }
         }
     }
@@ -688,13 +721,43 @@ class NetworkViewModel: ObservableObject {
     func addHostsEntry(address: String, hostnames: String, password: String) async -> String? {
         let names = hostnames.split(whereSeparator: { $0 == "," || $0 == " " || $0 == "\n" || $0 == "\t" }).map(String.init)
         guard isValidHostsAddress(address), !names.isEmpty, names.allSatisfy(isValidHostname) else { return "请输入有效 IP 地址和域名（支持逗号分隔多个域名）" }
+        return await addHostsEntryAtomically(address: address, names: names)
+        /*
+        let names = hostnames.split(whereSeparator: { $0 == "," || $0 == " " || $0 == "\n" || $0 == "\t" }).map(String.init)
+        guard isValidHostsAddress(address), !names.isEmpty, names.allSatisfy(isValidHostname) else { return "请输入有效 IP 地址和域名（支持逗号分隔多个域名）" }
         return await updateManagedHosts({ entries in
             let filtered = entries.filter { $0.address != address }
             return filtered + [HostsEntry(address: address, hostnames: names)]
         }, password: password)
+        */
     }
 
-    func deleteHostsEntry(_ entry: HostsEntry, password: String) async -> String? {
+    private func addHostsEntryAtomically(address: String, names: [String]) async -> String? {
+        do {
+            let original = try String(contentsOfFile: hostsPath, encoding: .utf8)
+            let existingNames = parseAllHosts(original).flatMap(\.hostnames)
+            guard names.allSatisfy({ !existingNames.contains($0) }) else { return "域名已存在于 /etc/hosts，已取消添加" }
+            let line = "\(address)\t\(names.joined(separator: " "))"
+            let updated: String
+            if let end = original.range(of: hostsEnd) {
+                updated = String(original[..<end.lowerBound]) + line + "\n" + String(original[end.lowerBound...])
+            } else {
+                updated = original.trimmingCharacters(in: .newlines) + "\n\n" + hostsBegin + "\n" + line + "\n" + hostsEnd + "\n"
+            }
+            let temp = "/tmp/aiguru-hosts-\(UUID().uuidString)"
+            try updated.write(toFile: temp, atomically: true, encoding: .utf8)
+            defer { try? FileManager.default.removeItem(atPath: temp) }
+            _ = try await CommandExecutor.shared.executeAdministratorShellCommand("/usr/bin/cmp -s /etc/hosts '\(hostsPath)' && /usr/bin/install -m 644 '\(temp)' /etc/hosts")
+            let verified = try String(contentsOfFile: hostsPath, encoding: .utf8)
+            guard names.allSatisfy({ parseAllHosts(verified).flatMap(\.hostnames).contains($0) }) else { return "原子写入后校验失败，新增条目不存在" }
+            await MainActor.run { refreshHosts() }
+            return nil
+        } catch { return error.localizedDescription }
+    }
+
+    func deleteHostsEntry(_ entry: HostsEntry, password: String = "") async -> String? {
+        return await deleteHostsEntryAtomically(entry)
+        /*
         do {
             let original = try String(contentsOfFile: hostsPath, encoding: .utf8)
             let updated = original.components(separatedBy: .newlines).filter { line in
@@ -702,7 +765,38 @@ class NetworkViewModel: ObservableObject {
                 guard parts.count >= 2, String(parts[0]) == entry.address else { return true }
                 return !parts.dropFirst().contains { entry.hostnames.contains(String($0)) }
             }.joined(separator: "\n")
-            _ = try await CommandExecutor.shared.executeSystemCommandWithSudo(["/usr/bin/tee", hostsPath], password: password, stdinData: Data(updated.utf8))
+            let encoded = Data(updated.utf8).base64EncodedString()
+            let command = "/bin/printf '%s' '\(encoded)' | base64 -d | /usr/bin/tee /etc/hosts"
+            let writeOutput = try await CommandExecutor.shared.executeAdministratorShellCommand(command)
+            let verified = try String(contentsOfFile: hostsPath, encoding: .utf8)
+            if parseAllHosts(verified).contains(where: { $0.id == entry.id }) {
+                return "删除命令已执行，但 /etc/hosts 中仍存在该条目。授权输出：\(writeOutput.trimmingCharacters(in: .whitespacesAndNewlines))"
+            }
+            await MainActor.run { refreshHosts() }
+            return nil
+        } catch { return error.localizedDescription }
+        */
+    }
+
+    private func deleteHostsEntryAtomically(_ entry: HostsEntry) async -> String? {
+        do {
+            let original = try String(contentsOfFile: hostsPath, encoding: .utf8)
+            let lines = original.components(separatedBy: .newlines)
+            let matching = lines.filter { line in
+                let body = line.split(separator: "#", maxSplits: 1).first ?? ""
+                let parts = body.split(whereSeparator: { $0 == " " || $0 == "\t" })
+                return parts.count >= 2 && String(parts[0]) == entry.address && parts.dropFirst().contains { entry.hostnames.contains(String($0)) }
+            }
+            guard matching.count == 1 else { return "未找到唯一匹配的 Hosts 条目，已取消删除" }
+            let updated = lines.enumerated().filter { index, line in
+                !matching.contains(line) || !line.contains(entry.hostnames.first ?? "\u{0}") || index != lines.firstIndex(of: line)
+            }.map(\.element).joined(separator: "\n")
+            let temp = "/tmp/aiguru-hosts-\(UUID().uuidString)"
+            try updated.write(toFile: temp, atomically: true, encoding: .utf8)
+            defer { try? FileManager.default.removeItem(atPath: temp) }
+            _ = try await CommandExecutor.shared.executeAdministratorShellCommand("/usr/bin/cmp -s /etc/hosts '\(hostsPath)' && /usr/bin/install -m 644 '\(temp)' /etc/hosts")
+            let verified = try String(contentsOfFile: hostsPath, encoding: .utf8)
+            guard !parseAllHosts(verified).contains(where: { $0.id == entry.id }) else { return "原子写入后校验失败，条目仍存在" }
             await MainActor.run { refreshHosts() }
             return nil
         } catch { return error.localizedDescription }
