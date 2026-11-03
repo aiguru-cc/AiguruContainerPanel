@@ -116,7 +116,7 @@ container system status
 ### 从源码构建
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/aiguru-cc/AiguruContainerPanel
 cd AiguruContainerPanel
 open AiguruContainerPanel.xcodeproj
 ```
