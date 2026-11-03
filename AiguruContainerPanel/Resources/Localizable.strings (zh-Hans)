@@ -1,0 +1,47 @@
+/* 通用 */
+"app_title" = "容器面板";
+"cancel" = "取消";
+"ok" = "确定";
+"delete" = "删除";
+"refresh" = "刷新";
+
+/* 容器列表 */
+"containers_title" = "容器";
+"create_container" = "创建容器";
+"container_name" = "容器名称";
+"image" = "镜像";
+"status" = "状态";
+"created_at" = "创建时间";
+"cpu" = "CPU";
+"memory" = "内存";
+
+/* 日志 */
+"logs_title" = "操作日志";
+"module" = "模块";
+"operation" = "操作";
+"command" = "命令";
+"result" = "结果";
+"success" = "成功";
+"failure" = "失败";
+"clear_logs" = "清空所有日志";
+"export_logs" = "导出...";
+"search_placeholder" = "搜索命令或输出...";
+"log_panel" = "日志面板";
+"auto_scroll" = "自动滚动";
+
+/* 系统 */
+"system_status" = "系统状态";
+"service_status" = "服务状态";
+"running" = "运行中";
+"stopped" = "已停止";
+"version" = "版本";
+"start_time" = "启动时间";
+"resource_usage" = "资源使用";
+"start_service" = "启动服务";
+"refresh_status" = "刷新状态";
+
+/* 模式 */
+"execution_mode" = "执行模式";
+"sync" = "同步";
+"async" = "异步";
+"stream" = "流式";

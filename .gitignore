@@ -1,0 +1,17 @@
+# Local agent and editor instructions
+.agents/
+.aiguru/
+.claude/
+.cursor/
+AGENTS.md
+CLAUDE.md
+scripts/
+
+# Xcode user state and local build output
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+
+# macOS metadata
+.DS_Store

@@ -1,0 +1,47 @@
+/* 通用 */
+"app_title" = "Container Panel";
+"cancel" = "Cancel";
+"ok" = "OK";
+"delete" = "Delete";
+"refresh" = "Refresh";
+
+/* 容器列表 */
+"containers_title" = "Containers";
+"create_container" = "Create Container";
+"container_name" = "Container Name";
+"image" = "Image";
+"status" = "Status";
+"created_at" = "Created At";
+"cpu" = "CPU";
+"memory" = "Memory";
+
+/* 日志 */
+"logs_title" = "Operation Logs";
+"module" = "Module";
+"operation" = "Operation";
+"command" = "Command";
+"result" = "Result";
+"success" = "Success";
+"failure" = "Failure";
+"clear_logs" = "Clear All Logs";
+"export_logs" = "Export...";
+"search_placeholder" = "Search command or output...";
+"log_panel" = "Log Panel";
+"auto_scroll" = "Auto Scroll";
+
+/* 系统 */
+"system_status" = "System Status";
+"service_status" = "Service Status";
+"running" = "Running";
+"stopped" = "Stopped";
+"version" = "Version";
+"start_time" = "Start Time";
+"resource_usage" = "Resource Usage";
+"start_service" = "Start Service";
+"refresh_status" = "Refresh Status";
+
+/* 模式 */
+"execution_mode" = "Execution Mode";
+"sync" = "Sync";
+"async" = "Async";
+"stream" = "Stream";
