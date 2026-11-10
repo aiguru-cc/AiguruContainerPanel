@@ -76,14 +76,16 @@
 
 ## 版本兼容
 
-当前指令库目标版本为 **Apple Container 1.6.1**，兼容 1.1.0 及以上版本。
+当前指令库目标版本为 **Apple Container 1.7.1**，兼容 1.1.0 及以上版本。
 
-1.6.1 的重要变化是 Kubernetes 命令组重命名：
+1.7.1 的重要变化包括：
 
 ```text
 container k8s ...       # 旧版本
 container cluster ...   # 1.6+
 ```
+
+Container 1.7.1 新增 Cluster shared image store 和 `cluster run`，`cluster load-image` 已移除，`cluster ls` 默认按集群显示，节点视图需要 `--nodes`。Worker 节点资源可通过 `--workers count=<n>,cpus=<n>,memory=<size>` 设置。
 
 面板内部使用统一命令键，并根据实际 CLI 版本自动生成正确路径。`container-apiserver` 可能仍显示 1.5.x，这是同一主版本 XPC API 兼容策略下的正常情况，不代表 CLI 未升级。
 
@@ -151,6 +153,26 @@ xcodebuild \
 ```
 
 所有区块和系统条目都会展示，但只有当前应用自己的区块允许删除。写入 `/etc/hosts` 需要管理员密码；密码仅用于本次 `sudo` 操作，不会持久化。
+
+## Agent 自动化 API
+
+应用启动后提供局域网 REST API，监听 `0.0.0.0:18765`。所有请求都需要启动日志中显示的 Bearer Token。
+
+```bash
+curl -H "Authorization: Bearer <token>" http://127.0.0.1:18765/v1/health
+```
+
+接口包括 `GET /v1/health`、`GET /v1/catalog`、资源查询接口、`POST /v1/command`、`POST /v1/actions/{resource}/{action}`、`GET /v1/tasks/{taskId}` 和 `POST /v1/tasks/{taskId}/cancel`。
+
+高层动作支持容器的 `start`、`stop`、`delete`，镜像的 `pull`、`delete`，网络的 `delete`，Machine 的 `start`、`stop`、`delete`，以及 Cluster 的 `delete`。请求体可使用 `name`、`image` 或直接传入 `arguments`。
+
+写操作返回 `taskId`，Agent 轮询任务接口直到 `succeeded` 或 `failed`。
+
+```bash
+curl -X POST -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"arguments":["container","list","--all","--format","json"]}' \
+  http://127.0.0.1:18765/v1/command
+```
 
 ## 项目结构
 

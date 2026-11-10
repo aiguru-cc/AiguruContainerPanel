@@ -1,8 +1,8 @@
 {
   "schemaVersion": 3,
-  "targetVersion": "1.6.1",
-  "compatibleVersions": ["1.1.0", "1.2.0", "1.3.0", "1.3.1", "1.4.1", "1.5.0", "1.6.1"],
-  "documentationURL": "https://github.com/apple/container/blob/1.6.1/docs/command-reference.md",
+  "targetVersion": "1.7.1",
+  "compatibleVersions": ["1.1.0", "1.2.0", "1.3.0", "1.3.1", "1.4.1", "1.5.0", "1.6.1", "1.7.1"],
+  "documentationURL": "https://github.com/apple/container/blob/1.7.1/docs/command-reference.md",
   "profiles": [
     {"key":"container-1.1","label":"Apple Container 1.1.x 指令库","minimumVersion":"1.1.0","maximumVersion":"1.1.999"},
     {"key":"container-1.2","label":"Apple Container 1.2.x 指令库","minimumVersion":"1.2.0","maximumVersion":"1.2.999"},
@@ -10,7 +10,8 @@
     {"key":"container-1.3.1","label":"Apple Container 1.3.1 指令库（继承 1.3.0 CLI）","minimumVersion":"1.3.1","maximumVersion":"1.3.999"},
     {"key":"container-1.4.1","label":"Apple Container 1.4.1 指令库","minimumVersion":"1.4.1","maximumVersion":"1.4.999"},
     {"key":"container-1.5","label":"Apple Container 1.5.x 指令库","minimumVersion":"1.5.0","maximumVersion":"1.5.999"},
-    {"key":"container-1.6","label":"Apple Container 1.6.x 指令库（cluster 命令）","minimumVersion":"1.6.0","maximumVersion":null}
+    {"key":"container-1.6","label":"Apple Container 1.6.x 指令库（cluster 命令）","minimumVersion":"1.6.0","maximumVersion":"1.6.999"},
+    {"key":"container-1.7","label":"Apple Container 1.7.x 指令库（Cluster 运行时）","minimumVersion":"1.7.0","maximumVersion":null}
   ],
   "capabilities": [
     {"key":"container.run.tmpfsMountSourceFixed","minimumVersion":"1.3.1","maximumVersion":null,"enabled":true},
@@ -21,7 +22,10 @@
     {"key":"containerization.securityBaseline1_5_0","minimumVersion":"1.5.0","maximumVersion":null,"enabled":true},
     {"key":"k8s.customCNI","minimumVersion":"1.5.0","maximumVersion":null,"enabled":true},
     {"key":"k8s.startRemoved","minimumVersion":"1.5.0","maximumVersion":null,"enabled":true},
-    {"key":"k8s.commandGroupRenamed","minimumVersion":"1.6.0","maximumVersion":null,"enabled":true}
+    {"key":"k8s.commandGroupRenamed","minimumVersion":"1.6.0","maximumVersion":null,"enabled":true},
+    {"key":"cluster.sharedImageStore","minimumVersion":"1.7.0","maximumVersion":null,"enabled":true},
+    {"key":"cluster.loadImageRemoved","minimumVersion":"1.7.0","maximumVersion":null,"enabled":true},
+    {"key":"cluster.lifecycleIsolation","minimumVersion":"1.7.0","maximumVersion":null,"enabled":true}
   ],
   "constraints": [
     {"key":"container.run.minimumMemoryMiB","minimumVersion":"1.2.2","maximumVersion":null,"integerValue":200,"recommendedValue":"256M"}
@@ -148,7 +152,7 @@
     {"key":"machine.inspect","path":["machine","inspect"],"minimumVersion":"1.0.0","maximumVersion":null,"options":[]},
     {"key":"machine.logs","path":["machine","logs"],"minimumVersion":"1.0.0","maximumVersion":null,"options":[{"key":"boot","flag":"--boot","minimumVersion":"1.0.0","repeatable":false},{"key":"tail","flag":"-n","minimumVersion":"1.0.0","repeatable":false}]},
     {"key":"k8s.version","path":["k8s","--version"],"minimumVersion":"1.3.0","maximumVersion":null,"options":[]},
-    {"key":"k8s.list","path":["k8s","list"],"minimumVersion":"1.3.0","maximumVersion":null,"options":[]},
+    {"key":"k8s.list","path":["k8s","list"],"minimumVersion":"1.3.0","maximumVersion":null,"options":[{"key":"nodes","flag":"--nodes","minimumVersion":"1.7.0","repeatable":false}]},
     {"key":"k8s.create","path":["k8s","create"],"minimumVersion":"1.3.0","maximumVersion":null,"options":[
       {"key":"name","flag":"--name","minimumVersion":"1.3.0","repeatable":false},
       {"key":"nodeImage","flag":"--node-image","minimumVersion":"1.3.0","repeatable":false,"ui":{"section":"节点运行时","label":"节点镜像","control":"text","placeholder":"默认 kindest/node:v1.35.5","help":"Kubernetes 1.35.5 节点 OCI 镜像；留空使用插件锁定的 digest"}},
@@ -157,11 +161,13 @@
       {"key":"memory","flag":"--memory","minimumVersion":"1.3.0","repeatable":false,"ui":{"section":"节点资源","label":"内存","control":"text","placeholder":"至少 2G，建议 8G","help":"分配给单节点控制面的内存"}},
       {"key":"scheme","flag":"--scheme","minimumVersion":"1.3.0","repeatable":false,"ui":{"section":"镜像拉取","label":"Registry Scheme","control":"select","placeholder":null,"help":"1.3.x 插件支持 https/http，默认 https","choices":["https","http"]}},
       {"key":"maxConcurrentDownloads","flag":"--max-concurrent-downloads","minimumVersion":"1.3.0","repeatable":false,"ui":{"section":"镜像拉取","label":"并发下载数","control":"text","placeholder":"默认 3","help":"同时下载的镜像层数量"}},
-      {"key":"rm","flag":"--rm","minimumVersion":"1.3.0","repeatable":false,"ui":{"section":"生命周期","label":"停止后自动删除","control":"toggle","placeholder":null,"help":"对应 --rm"}}
+      {"key":"rm","flag":"--rm","minimumVersion":"1.3.0","repeatable":false,"ui":{"section":"生命周期","label":"停止后自动删除","control":"toggle","placeholder":null,"help":"对应 --rm"}},
+      {"key":"workers","flag":"--workers","minimumVersion":"1.7.0","repeatable":false,"ui":{"section":"工作节点","label":"Worker 资源","control":"text","placeholder":"count=1,cpus=2,memory=4G","help":"Container 1.7+ 工作节点资源配置"}}
     ]},
+    {"key":"k8s.run","path":["k8s","run"],"minimumVersion":"1.7.0","maximumVersion":null,"options":[{"key":"name","flag":"--name","minimumVersion":"1.7.0","repeatable":false},{"key":"sharedImageStore","flag":"--shared-image-store","minimumVersion":"1.7.0","repeatable":false}]},
     {"key":"k8s.start","path":["k8s","start"],"minimumVersion":"1.3.0","maximumVersion":"1.4.999","options":[{"key":"name","flag":"--name","minimumVersion":"1.3.0","maximumVersion":"1.4.999","repeatable":false}]},
     {"key":"k8s.delete","path":["k8s","delete"],"minimumVersion":"1.3.0","maximumVersion":null,"options":[{"key":"name","flag":"--name","minimumVersion":"1.3.0","repeatable":false}]},
-    {"key":"k8s.loadImage","path":["k8s","load-image"],"minimumVersion":"1.3.0","maximumVersion":null,"options":[{"key":"name","flag":"--name","minimumVersion":"1.3.0","repeatable":false},{"key":"platform","flag":"--platform","minimumVersion":"1.3.0","repeatable":false}]},
+    {"key":"k8s.loadImage","path":["k8s","load-image"],"minimumVersion":"1.3.0","maximumVersion":"1.6.999","options":[{"key":"name","flag":"--name","minimumVersion":"1.3.0","repeatable":false},{"key":"platform","flag":"--platform","minimumVersion":"1.3.0","repeatable":false}]},
     {"key":"k8s.writeConfig","path":["k8s","write-config"],"minimumVersion":"1.3.0","maximumVersion":null,"options":[{"key":"name","flag":"--name","minimumVersion":"1.3.0","repeatable":false},{"key":"kubeconfig","flag":"--kubeconfig","minimumVersion":"1.3.0","repeatable":false}]}
   ]
 }

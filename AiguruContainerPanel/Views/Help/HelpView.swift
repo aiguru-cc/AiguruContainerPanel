@@ -9,7 +9,7 @@ struct HelpView: View {
                 Text("Apple Container 的原生 macOS 图形化管理面板。")
                     .font(.title3).foregroundStyle(.secondary)
                 helpSection("功能概览", "容器、镜像、网络、Hosts、卷、Machine、Kubernetes/Container Cluster、系统状态和操作日志。")
-                helpSection("版本兼容", "当前指令库目标版本为 Apple Container 1.6.1。1.6+ 使用 container cluster 命令组；旧版本继续使用 container k8s。container-apiserver 可能显示 1.5.x，这是同主版本 XPC API 兼容策略下的正常状态。")
+                helpSection("版本兼容", "当前指令库目标版本为 Apple Container 1.7.1。1.6+ 使用 container cluster 命令组。1.7 移除了 cluster load-image，新增 shared image store、cluster run 和 worker 节点资源配置。")
                 helpSection("Hosts 管理", "Hosts 页面会读取完整 /etc/hosts，并按已有 managed block 分组展示。只有 AiguruContainerPanel 自己的区块允许修改，其它应用和系统条目只读展示，避免覆盖和域名冲突。写入需要管理员密码，密码不会保存。")
                 helpSection("安全提示", "删除容器、停止服务、清理资源和写入 Hosts 前请确认目标。请勿提交管理员密码、私有仓库凭据或 kubeconfig。")
                 VStack(alignment: .leading, spacing: 12) {

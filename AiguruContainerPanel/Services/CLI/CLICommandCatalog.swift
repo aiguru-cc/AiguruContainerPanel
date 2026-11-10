@@ -68,6 +68,7 @@ private struct CLICommandCatalogFile: Codable {
 /// CLI 命令与参数的唯一版本目录。新增参数优先修改 JSON，无需在各页面重复声明版本。
 final class CLICommandCatalog {
     static let shared = CLICommandCatalog()
+    var allCommandKeys: [String] { Array(commands.keys).sorted() }
 
     private let commands: [String: CLICommandDefinition]
     let schemaVersion: Int

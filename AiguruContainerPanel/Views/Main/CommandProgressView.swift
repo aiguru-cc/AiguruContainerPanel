@@ -64,6 +64,10 @@ struct CommandProgressView: View {
                         Text("\(taskManager.remainingSeconds)s")
                             .font(.caption2.monospaced())
                             .foregroundStyle(taskManager.remainingSeconds < 10 ? .red : .secondary)
+                        Button("续期 +600s") { taskManager.extendTimeout() }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            .help("为当前计时任务增加 600 秒")
                     }
                 } else if taskManager.isProgressIndeterminate {
                     ProgressView()

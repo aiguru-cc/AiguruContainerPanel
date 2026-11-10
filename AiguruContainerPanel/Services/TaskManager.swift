@@ -82,6 +82,15 @@ class TaskManager: ObservableObject {
         }
     }
 
+    /// Extends the active timeout without restarting the underlying process.
+    func extendTimeout(by seconds: Int = 600) {
+        guard status == .running, hasTimeout, seconds > 0 else { return }
+        DispatchQueue.main.async {
+            self.commandTimeout += TimeInterval(seconds)
+            self.remainingSeconds += seconds
+        }
+    }
+
     // MARK: - 追加输出行
     func appendOutput(_ line: String) {
         DispatchQueue.main.async {

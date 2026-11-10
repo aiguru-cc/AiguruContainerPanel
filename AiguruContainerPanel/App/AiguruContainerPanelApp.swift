@@ -20,6 +20,7 @@ struct AiguruContainerPanelApp: App {
         _ = ImageSourceManager.shared
         // 应用插件市场已下线；保留注册表对象仅用于兼容旧数据与 Kubernetes 插件能力。
         print("✅ 应用初始化完成")
+        AgentAPIServer.shared.start()
     }
     
     var body: some Scene {
